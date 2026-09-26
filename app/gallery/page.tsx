@@ -1,0 +1,11 @@
+import Image from "next/image";
+import { PageShell } from "@/components/portfolio/page-shell";
+import { EmptyState, SectionHeader } from "@/components/portfolio/visual-system";
+import { getPublishedContent } from "@/lib/portfolio/data";
+
+export const metadata = { title: "แกลเลอรี | Somprasong Thunnok", description: "ภาพผลงาน กิจกรรม และช่วงเวลาแห่งการเรียนรู้" };
+
+export default async function GalleryPage() {
+  const photos = await getPublishedContent("gallery");
+  return <PageShell><main><section className="relative overflow-hidden border-b border-cyan-300/10 bg-[#050a12] px-5 py-24 text-white sm:py-32"><div className="star-field absolute inset-0" /><div className="relative mx-auto max-w-7xl"><p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">ภาพระหว่างทาง</p><h1 className="tech-heading mt-5 text-5xl font-black sm:text-7xl">แกลเลอรี</h1><p className="mt-6 max-w-2xl text-xl leading-9 text-slate-400">ภาพจากผลงาน กิจกรรม การทดลอง และวันธรรมดาที่ได้เรียนรู้อะไรใหม่ ๆ</p></div></section><section className="section-mid px-5 py-24"><div className="mx-auto max-w-7xl"><SectionHeader eyebrow="ภาพที่เก็บไว้" title="เรื่องราวผ่านรูปภาพ" dark /><div className="mt-10 columns-1 gap-5 sm:columns-2 lg:columns-3">{photos.length > 0 ? photos.map((photo, index) => <figure key={String(photo.id)} className="hud-panel mb-5 break-inside-avoid overflow-hidden">{photo.image_url ? <Image src={String(photo.image_url)} alt={String(photo.title ?? "ภาพจากแกลเลอรี")} width={1000} height={760} className={`w-full object-cover ${index % 3 === 0 ? "h-96" : index % 3 === 1 ? "h-72" : "h-80"}`} /> : <div className="grid h-80 place-items-center text-slate-500">รอรูปภาพ</div>}<figcaption className="p-5"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-semibold text-white">{String(photo.title)}</p>{photo.event_date ? <p className="text-sm text-slate-500">{String(photo.event_date)}</p> : null}</div><p className="mt-2 text-base leading-7 text-slate-400">{String(photo.description ?? photo.category ?? "")}</p></figcaption></figure>) : <div className="break-inside-avoid"><EmptyState dark>ยังไม่มีภาพแกลเลอรีที่เผยแพร่</EmptyState></div>}</div></div></section></main></PageShell>;
+}

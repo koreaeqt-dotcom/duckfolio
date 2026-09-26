@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Duckfolio
 
-## Getting Started
+Duckfolio is a personal portfolio website with a built-in admin CMS. The public site presents projects, achievements, certificates, skills, timeline entries, gallery photos, and profile information with a subtle night-pond visual identity.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+
+## Local Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create `.env.local` with:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase Requirements
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Duckfolio expects these tables to exist:
 
-## Learn More
+- `profile`
+- `projects`
+- `project_images`
+- `achievements`
+- `competitions`
+- `certificates`
+- `skills`
+- `gallery`
+- `timeline`
+- `admins`
 
-To learn more about Next.js, take a look at the following resources:
+Public pages only query rows with `published = true` for publishable content. The admin CMS requires a signed-in Supabase Auth user whose `auth.users.id` matches `public.admins.user_id`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Storage uploads use the public bucket:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+portfolio-images
+```
 
-## Deploy on Vercel
+Make sure your RLS and Storage policies allow authorized admins to manage CMS rows and upload files, while public visitors can only read published content and public images.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The ready-to-run policy file is [`supabase/rls-policies.sql`](./supabase/rls-policies.sql). Run it in the Supabase SQL Editor. It includes the required admin membership policy:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```sql
+create policy "Duckfolio users can read own admin membership"
+on public.admins
+for select
+to authenticated
+using (user_id = auth.uid());
+```
+
+This project never uses `SUPABASE_SECRET_KEY`, `service_role`, hard-coded admin emails, or public access to `public.admins`.
+
+For competition entries, run [`supabase/competitions.sql`](./supabase/competitions.sql). It creates the `competitions` table and its required admin membership helper, allows public visitors to read only published entries, and keeps all writes admin-only. It can be run by itself or after the main RLS policy file.
+
+## Routes
+
+Public routes:
+
+- `/`
+- `/projects`
+- `/projects/[slug]`
+- `/achievements`
+- `/competitions`
+- `/competitions/[id]`
+- `/gallery`
+
+Admin routes:
+
+- `/admin`
+- `/admin/login`
+- `/admin/projects`
+- `/admin/projects/new`
+- `/admin/projects/[id]/edit`
+- `/admin/achievements`
+- `/admin/competitions`
+- `/admin/certificates`
+- `/admin/gallery`
+- `/admin/skills`
+- `/admin/timeline`
+- `/admin/profile`
+
+## Admin Login
+
+There is no public signup page. Create the admin user in Supabase Auth, then add that user to `public.admins`. Unauthenticated visitors to `/admin` are redirected to `/admin/login`. Signed-in users who are not admins are also redirected away from the CMS.
+
+## Deployment
+
+Deploy to Vercel as a standard Next.js app. Add the same Supabase environment variables in the Vercel project settings, and confirm the Supabase URL host is available at build time so Next.js can allow optimized images from your project.
+
+## Checks
+
+```bash
+npm run lint
+npm run build
+```
